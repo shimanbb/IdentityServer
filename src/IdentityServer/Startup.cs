@@ -5,9 +5,11 @@
 using System.Reflection;
 
 using IdentityServer.Db;
+using IdentityServer.Model;
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -30,34 +32,42 @@ namespace IdentityServer
         public void ConfigureServices(IServiceCollection services)
         {
             var migrationsAssembly = typeof(Startup).GetTypeInfo().Assembly.GetName().Name;
-            var connectionString = Configuration.GetConnectionString("IdentityServerConnection");
+            var ids_connectionString = Configuration.GetConnectionString("IdentityServerConnection");
+            var auth_connectionString = Configuration.GetConnectionString("AuthServerConnection");
+            services.AddMvc();
+            services.AddDbContext<AspNetIdentityDbContext>(options =>
+                options.UseNpgsql(auth_connectionString));
 
-            var clts = Config.Clients;
+            services.AddIdentity<ApplicationUser, IdentityRole>()
+                .AddEntityFrameworkStores<AspNetIdentityDbContext>()
+                .AddDefaultTokenProviders();
+
+
 
             services.AddDbContext<AuthDbContext>(options =>
-                options.UseNpgsql(connectionString));
-
-
+                options.UseNpgsql(ids_connectionString));
 
             // uncomment, if you want to add an MVC-based UI
             services.AddControllersWithViews();
 
             var builder = services.AddIdentityServer()
-                .AddTestUsers(TestUsers.Users)
+                 .AddAspNetIdentity<ApplicationUser>()
+
+                //.AddTestUsers(TestUsers.Users)
                 //.AddInMemoryIdentityResources(Config.Ids)
                 //.AddInMemoryApiResources(Config.Apis)
                 //.AddInMemoryClients(Config.Clients)
                 .AddConfigurationStore(options =>
                 {
-                    options.ConfigureDbContext = b => b.UseNpgsql(connectionString,
+                    options.ConfigureDbContext = b => b.UseNpgsql(ids_connectionString,
                         sql => sql.MigrationsAssembly(migrationsAssembly));
                 })
                 .AddOperationalStore(options =>
                 {
-                    options.ConfigureDbContext = b => b.UseNpgsql(connectionString,
+                    options.ConfigureDbContext = b => b.UseNpgsql(ids_connectionString,
                         sql => sql.MigrationsAssembly(migrationsAssembly));
-                })
-                ;
+                });
+
             // not recommended for production - you need to store your key material somewhere secure
             builder.AddDeveloperSigningCredential();
         }
