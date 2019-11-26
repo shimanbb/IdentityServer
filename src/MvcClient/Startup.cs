@@ -37,6 +37,7 @@ namespace MvcClient
 
                     options.ClientId = "mvc";
                     options.ClientSecret = "secret";
+
                     options.ResponseType = "code";
 
                     options.SaveTokens = true;
@@ -60,7 +61,7 @@ namespace MvcClient
                 //app.UseHsts();
             }
             //app.UseHttpsRedirection();
-            app.UseStaticFiles();
+            //app.UseStaticFiles();
 
             app.UseRouting();
             app.UseAuthentication();
@@ -69,7 +70,7 @@ namespace MvcClient
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapDefaultControllerRoute()
-                            .RequireAuthorization();
+                .RequireAuthorization();
             });
 
             //app.UseMvc(routes =>
